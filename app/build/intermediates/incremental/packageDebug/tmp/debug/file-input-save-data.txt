@@ -1,0 +1,35 @@
+#Internal package file, do not edit.
+#Tue Sep 25 01:50:15 CEST 2018
+7.path=classes.dex
+2.base=/home/giano/AndroidStudioProjects/FeedbackGenerator/app/build/intermediates/transforms/stripDebugSymbol/debug/0
+5.set=NATIVE_RESOURCE
+0.path=classes.dex
+2.baseType=DIRECTORY
+3.base=/home/giano/AndroidStudioProjects/FeedbackGenerator/app/build/intermediates/transforms/stripDebugSymbol/debug/0
+7.baseType=DIRECTORY
+2.set=NATIVE_RESOURCE
+1.path=lib/arm64-v8a/libFeedbackFilter.so
+4.base=/home/giano/AndroidStudioProjects/FeedbackGenerator/app/build/intermediates/transforms/dexMerger/debug/15
+7.set=DEX
+count=8
+5.baseType=DIRECTORY
+2.path=lib/armeabi-v7a/libFeedbackFilter.so
+5.base=/home/giano/AndroidStudioProjects/FeedbackGenerator/app/build/intermediates/transforms/stripDebugSymbol/debug/0
+4.set=DEX
+3.path=lib/x86_64/libFeedbackFilter.so
+6.base=/home/giano/AndroidStudioProjects/FeedbackGenerator/app/build/intermediates/transforms/dexMerger/debug/12
+3.baseType=DIRECTORY
+1.set=NATIVE_RESOURCE
+4.path=classes.dex
+7.base=/home/giano/AndroidStudioProjects/FeedbackGenerator/app/build/intermediates/transforms/dexMerger/debug/13
+6.set=DEX
+1.baseType=DIRECTORY
+6.baseType=DIRECTORY
+5.path=lib/x86/libFeedbackFilter.so
+0.base=/home/giano/AndroidStudioProjects/FeedbackGenerator/app/build/intermediates/transforms/dexMerger/debug/14
+0.baseType=DIRECTORY
+3.set=NATIVE_RESOURCE
+6.path=classes.dex
+1.base=/home/giano/AndroidStudioProjects/FeedbackGenerator/app/build/intermediates/transforms/stripDebugSymbol/debug/0
+4.baseType=DIRECTORY
+0.set=DEX

@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">FeedbackGenerator</string>
+
+    <string-array name="filterPrecisions">
+        <item>Octaves</item>
+        <item>ET 2 Tritones</item>
+        <item>ET 3 Major Thirds</item>
+        <item>ET 4 Minor Thirds</item>
+        <item>ET 6 Major Second</item>
+        <item>JI 7 3-limit</item>
+        <item>ET 12 Semitones</item>
+        <item>JI 19 5-limit</item>
+        <item>ET 24 Quarter-Tones</item>
+        <item>JI 31 7-limit</item>
+        <item>ET 43 11-limit</item>
+        <item>ET 48 Eighth-Tones</item>
+    </string-array>
+
+</resources>

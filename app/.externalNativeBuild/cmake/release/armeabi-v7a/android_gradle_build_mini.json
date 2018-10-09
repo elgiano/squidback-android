@@ -1,0 +1,16 @@
+{
+  "buildFiles": [
+    "/home/giano/AndroidStudioProjects/FeedbackGenerator/app/CMakeLists.txt"
+  ],
+  "cleanCommands": [
+    "/home/giano/Android/Sdk/cmake/3.6.4111459/bin/cmake --build /home/giano/AndroidStudioProjects/FeedbackGenerator/app/.externalNativeBuild/cmake/release/armeabi-v7a --target clean"
+  ],
+  "libraries": {
+    "FeedbackFilter-Release-armeabi-v7a": {
+      "artifactName": "FeedbackFilter",
+      "buildCommand": "/home/giano/Android/Sdk/cmake/3.6.4111459/bin/cmake --build /home/giano/AndroidStudioProjects/FeedbackGenerator/app/.externalNativeBuild/cmake/release/armeabi-v7a --target FeedbackFilter",
+      "abi": "armeabi-v7a",
+      "output": "/home/giano/AndroidStudioProjects/FeedbackGenerator/app/build/intermediates/cmake/release/obj/armeabi-v7a/libFeedbackFilter.so"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "buildFiles": [
+    "/home/giano/AndroidStudioProjects/FeedbackGenerator/app/CMakeLists.txt"
+  ],
+  "cleanCommands": [
+    "/home/giano/Android/Sdk/cmake/3.6.4111459/bin/cmake --build /home/giano/AndroidStudioProjects/FeedbackGenerator/app/.externalNativeBuild/cmake/release/x86 --target clean"
+  ],
+  "libraries": {
+    "FeedbackFilter-Release-x86": {
+      "artifactName": "FeedbackFilter",
+      "buildCommand": "/home/giano/Android/Sdk/cmake/3.6.4111459/bin/cmake --build /home/giano/AndroidStudioProjects/FeedbackGenerator/app/.externalNativeBuild/cmake/release/x86 --target FeedbackFilter",
+      "abi": "x86",
+      "output": "/home/giano/AndroidStudioProjects/FeedbackGenerator/app/build/intermediates/cmake/release/obj/x86/libFeedbackFilter.so"
+    }
+  }
+}

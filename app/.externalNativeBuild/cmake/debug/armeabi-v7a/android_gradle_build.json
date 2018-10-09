@@ -1,0 +1,59 @@
+
+{
+	"buildFiles" : 
+	[
+		"/home/giano/AndroidStudioProjects/FeedbackGenerator/app/CMakeLists.txt"
+	],
+	"cleanCommands" : 
+	[
+		"/home/giano/Android/Sdk/cmake/3.6.4111459/bin/cmake --build /home/giano/AndroidStudioProjects/FeedbackGenerator/app/.externalNativeBuild/cmake/debug/armeabi-v7a --target clean"
+	],
+	"cppFileExtensions" : [ "cpp" ],
+	"libraries" : 
+	{
+		"FeedbackFilter-Debug-armeabi-v7a" : 
+		{
+			"abi" : "armeabi-v7a",
+			"artifactName" : "FeedbackFilter",
+			"buildCommand" : "/home/giano/Android/Sdk/cmake/3.6.4111459/bin/cmake --build /home/giano/AndroidStudioProjects/FeedbackGenerator/app/.externalNativeBuild/cmake/debug/armeabi-v7a --target FeedbackFilter",
+			"buildType" : "debug",
+			"files" : 
+			[
+				
+				{
+					"flags" : "  --target=armv7-none-linux-androideabi --gcc-toolchain=/home/giano/Android/Sdk/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64 --sysroot=/home/giano/Android/Sdk/ndk-bundle/sysroot  -DFeedbackFilter_EXPORTS -I../../../../src/main/cpp -I../../../../../Superpowered -isystem /home/giano/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /home/giano/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include -isystem /home/giano/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -isystem /home/giano/Android/Sdk/ndk-bundle/sysroot/usr/include/arm-linux-androideabi -D__ANDROID_API__=16 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -Wa,--noexecstack -Wformat -Werror=format-security  -fsigned-char -I/home/giano/AndroidStudioProjects/FeedbackGenerator/app/../Superpowered -O0 -fno-limit-debug-info  -fPIC    -c ",
+					"src" : "/home/giano/AndroidStudioProjects/FeedbackGenerator/app/src/main/cpp/SpectrumVisualizer.cpp",
+					"workingDirectory" : "/home/giano/AndroidStudioProjects/FeedbackGenerator/app/.externalNativeBuild/cmake/debug/armeabi-v7a"
+				},
+				
+				{
+					"flags" : "  --target=armv7-none-linux-androideabi --gcc-toolchain=/home/giano/Android/Sdk/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64 --sysroot=/home/giano/Android/Sdk/ndk-bundle/sysroot  -DFeedbackFilter_EXPORTS -I../../../../src/main/cpp -I../../../../../Superpowered -isystem /home/giano/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /home/giano/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include -isystem /home/giano/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -isystem /home/giano/Android/Sdk/ndk-bundle/sysroot/usr/include/arm-linux-androideabi -D__ANDROID_API__=16 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -Wa,--noexecstack -Wformat -Werror=format-security  -fsigned-char -I/home/giano/AndroidStudioProjects/FeedbackGenerator/app/../Superpowered -O0 -fno-limit-debug-info  -fPIC    -c ",
+					"src" : "/home/giano/AndroidStudioProjects/FeedbackGenerator/app/src/main/cpp/ReactiveFilter.cpp",
+					"workingDirectory" : "/home/giano/AndroidStudioProjects/FeedbackGenerator/app/.externalNativeBuild/cmake/debug/armeabi-v7a"
+				},
+				
+				{
+					"flags" : "  --target=armv7-none-linux-androideabi --gcc-toolchain=/home/giano/Android/Sdk/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64 --sysroot=/home/giano/Android/Sdk/ndk-bundle/sysroot  -DFeedbackFilter_EXPORTS -I../../../../src/main/cpp -I../../../../../Superpowered -isystem /home/giano/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /home/giano/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include -isystem /home/giano/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -isystem /home/giano/Android/Sdk/ndk-bundle/sysroot/usr/include/arm-linux-androideabi -D__ANDROID_API__=16 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -Wa,--noexecstack -Wformat -Werror=format-security  -fsigned-char -I/home/giano/AndroidStudioProjects/FeedbackGenerator/app/../Superpowered -O0 -fno-limit-debug-info  -fPIC    -c ",
+					"src" : "/home/giano/AndroidStudioProjects/FeedbackGenerator/app/src/main/cpp/FeedbackFilter.cpp",
+					"workingDirectory" : "/home/giano/AndroidStudioProjects/FeedbackGenerator/app/.externalNativeBuild/cmake/debug/armeabi-v7a"
+				},
+				
+				{
+					"flags" : "  --target=armv7-none-linux-androideabi --gcc-toolchain=/home/giano/Android/Sdk/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64 --sysroot=/home/giano/Android/Sdk/ndk-bundle/sysroot  -DFeedbackFilter_EXPORTS -I../../../../src/main/cpp -I../../../../../Superpowered -isystem /home/giano/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include -isystem /home/giano/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/libs/armeabi-v7a/include -isystem /home/giano/Android/Sdk/ndk-bundle/sources/cxx-stl/gnu-libstdc++/4.9/include/backward  -isystem /home/giano/Android/Sdk/ndk-bundle/sysroot/usr/include/arm-linux-androideabi -D__ANDROID_API__=16 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -Wa,--noexecstack -Wformat -Werror=format-security  -fsigned-char -I/home/giano/AndroidStudioProjects/FeedbackGenerator/app/../Superpowered -O0 -fno-limit-debug-info  -fPIC    -c ",
+					"src" : "/home/giano/AndroidStudioProjects/FeedbackGenerator/Superpowered/AndroidIO/SuperpoweredAndroidAudioIO.cpp",
+					"workingDirectory" : "/home/giano/AndroidStudioProjects/FeedbackGenerator/app/.externalNativeBuild/cmake/debug/armeabi-v7a"
+				}
+			],
+			"output" : "/home/giano/AndroidStudioProjects/FeedbackGenerator/app/build/intermediates/cmake/debug/obj/armeabi-v7a/libFeedbackFilter.so",
+			"toolchain" : "16322363488152703252"
+		}
+	},
+	"toolchains" : 
+	{
+		"16322363488152703252" : 
+		{
+			"cCompilerExecutable" : "/home/giano/Android/Sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/clang",
+			"cppCompilerExecutable" : "/home/giano/Android/Sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++"
+		}
+	}
+}
