@@ -1,0 +1,14 @@
+build
+build/*
+.gradle
+.gradle/*
+.idea
+.idea/*
+key
+key/*
+app/build
+app/build/*
+app/.externalNativeBuild
+app/.externalNativeBuild/*
+app/release
+app/release/*
