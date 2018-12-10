@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">FeedbackGenerator</string>
+    <string name="app_name">squidback</string>
 
     <string-array name="filterPrecisions">
         <item>Octaves</item>

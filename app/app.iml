@@ -8,7 +8,7 @@
     </facet>
     <facet type="native-android-gradle" name="Native-Android-Gradle">
       <configuration>
-        <option name="SELECTED_BUILD_VARIANT" value="debug" />
+        <option name="SELECTED_BUILD_VARIANT" value="release" />
       </configuration>
     </facet>
     <facet type="android" name="Android">
@@ -128,6 +128,7 @@
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/symbols" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/transforms" />
       <excludeFolder url="file://$MODULE_DIR$/build/outputs" />
+      <excludeFolder url="file://$MODULE_DIR$/build/reports" />
       <excludeFolder url="file://$MODULE_DIR$/build/tmp" />
     </content>
     <orderEntry type="jdk" jdkName="Android API 27 Platform" jdkType="Android SDK" />

@@ -11,6 +11,7 @@
 #include <SuperpoweredNBandEQ.cpp>
 #include <SuperpoweredBandpassFilterbank.h>
 #include "ReactiveFilter.h"
+#include "ReactiveFilterController.h"
 
 
 typedef struct reactiveFilterInternals {
@@ -30,10 +31,10 @@ typedef struct reactiveFilterInternals {
 /* UTILS */
 
 float ampdb(float amp){
-    return 10*(float)log10(amp);
+    return 20*(float)log10(amp);
 }
 float dbAmp(float amp){
-    return (float) pow(10,amp/10);
+    return (float) pow(10,amp/20);
 }
 
 unsigned indexOfClosestTo( float* nums, unsigned nNums, float target )
@@ -93,6 +94,12 @@ ReactiveFilter::ReactiveFilter(unsigned int samplerate) {
     peakThreshold = 0.1;
     inertia = 0.001;
 
+    limiter = new SuperpoweredLimiter((unsigned int)samplerate);
+    limiter->enable(true);
+
+    controller = new ReactiveFilterController();
+    controller->target = this;
+
 }
 
 /* DESTRUCTOR */
@@ -100,6 +107,7 @@ ReactiveFilter::ReactiveFilter(unsigned int samplerate) {
 ReactiveFilter::~ReactiveFilter() {
     if(internals!=NULL) freeInternals(internals);
     if(nextInternals!=NULL) freeInternals(nextInternals);
+    delete limiter;
 }
 
 void ReactiveFilter::reset(){
@@ -109,6 +117,7 @@ void ReactiveFilter::reset(){
 void ReactiveFilter::setSamplerate(unsigned int samplerate) {
     // This method can be called from any thread. Setting the sample rate of all filters must be synchronous, in the audio processing thread.
     internals->newSamplerate = samplerate;
+    limiter->setSamplerate(samplerate);
 }
 
 /* ACCESSORS */
@@ -142,7 +151,8 @@ float *ReactiveFilter::getFilterDbs(bool applyMasterGain) {
 void ReactiveFilter::adjustLopass(float newLopass, bool clear){
     float oldLopass = lopass;
 
-    lopass = newLopass;
+    if(newLopass>0) lopass = newLopass;
+
 
     if(clear && internals->filter) {
         // clear bands between old and new lopass
@@ -159,6 +169,15 @@ void ReactiveFilter::adjustLopass(float newLopass, bool clear){
 
 // Now setFilterBands creates a new internal struct
 // nextInternals will be swapped with internals synchronously in the audio thread
+
+void ReactiveFilter::incrementBand(int i, float val){
+    internals->filter->setBand(i, internals->filter->decibels[i] + val);
+}
+
+float ReactiveFilter::getBand(int i){
+    if(internals->analBands && i< internals->analNumBands) return internals->analBands[i];
+    return 0;
+}
 
 void ReactiveFilter::setFilterBands(int div){
 
@@ -328,6 +347,7 @@ void ReactiveFilter::updateInternals() {
             adaptFilter(tmp->analBands,tmp->filter->decibels,tmp->analNumBands);
         }
         freeInternals(tmp);
+        lastPeakCorrections = controller->getPersistentPeakCorrectionNoGain();
     }
 }
 
@@ -346,16 +366,42 @@ bool ReactiveFilter::process(float *input, float *output, unsigned int numberOfS
 
     if (!internals->filter || !internals->analFilterbank ) return false; // Some safety.
 
+    controller->trackValue("inVolDb", ampdb(SuperpoweredPeak(input, numberOfSamples)));
+
     // anal here: get bands magnitude
     float peak,sum;
     internals->analFilterbank->processNoAdd(input,internals->analMagnitudes,&peak,&sum,numberOfSamples);
     //correctExpectations();
+
 
     // update filter and process input->output
     updateFilterAvgPeakNoGain();
 
     SuperpoweredVolumeAdd(input,output,dbAmp(masterGain),dbAmp(masterGain), numberOfSamples);
     internals->filter->process(output,output, numberOfSamples);
+
+    // limit and out
+    limiter->process(output, output, numberOfSamples);
+
+    limiterCorrection = limiter->getGainReductionDb();
+
+
+    controller->trackValue("outVolDb", ampdb(SuperpoweredPeak(output, numberOfSamples)));
+    controller->trackValue("averageDb", average);
+    controller->trackValue("peakDb", this->peak);
+    controller->trackValue("peakness", peakness);
+    controller->trackValue("limiterCorrection", limiterCorrection);
+    if(internals->analMagnitudes[currentPeakIndex] > peakThreshold)
+        controller->trackValue("peakI", currentPeakIndex);
+
+    /*std::cout << limiterCorrection << std::endl;
+    auto now = std::chrono::system_clock::now();
+    std::cout << (std::chrono::duration_cast<std::chrono::milliseconds>(now-lastUpdate)).count() << std::endl;
+    lastUpdate = now;*/
+
+    controller->adjustControls();
+
+
 
     return true;
 
@@ -385,9 +431,11 @@ void ReactiveFilter::updateFilterAvgPeakNoGain() {
     float numGainedBands = 0;
 
     // detect peak
+    float *peakDb = std::max_element(internals->analMagnitudes, internals->analMagnitudes+internals->analNumBands);
+
     currentPeakIndex = (unsigned int) std::distance(
             internals->analMagnitudes,
-            std::max_element(internals->analMagnitudes, internals->analMagnitudes+internals->analNumBands)
+            peakDb
     );
 
     // calc average dbs
@@ -396,7 +444,12 @@ void ReactiveFilter::updateFilterAvgPeakNoGain() {
     };
     averageDb = ampdb(averageDb/internals->analNumBands);
 
-    //__android_log_print(ANDROID_LOG_INFO, "peak", "avg: %f thr: %f peak: %f", averageDb,peakThreshold, ampdb(analMagnitudes[currentPeakIndex]));
+    // calc peakness
+    peak = ampdb(*peakDb);
+    average = averageDb;
+    peakness = dbAmp(peak)/dbAmp(averageDb);
+
+    std::vector<float> corrections = controller->getPersistentPeakCorrectionNoGain();
 
     for(unsigned int i=0; i<internals->analNumBands; i++){
 
@@ -414,36 +467,42 @@ void ReactiveFilter::updateFilterAvgPeakNoGain() {
 
         newGain = internals->filter->decibels[i] + (newGain/plasticity);
 
+        // NaN filter
+        if(isnan(newGain)){newGain = 0;}
 
-        //if(abs(newGain)>maxGain){newGain = maxGain * sign(newGain);}
-        if(newGain<-maxGain*2){newGain = -maxGain*2;}
-
+        // lowest limit
+        if(newGain<-(maxGain+80)){newGain = -(maxGain+80);}
+        // lowpass
         if(internals->analBands[i]>=lopass){
-            newGain = -maxGain*2;
+            newGain = -maxGain-80;
         }
 
+        // don't give gain
         if(newGain>0){
             totGain += newGain;
             numGainedBands += 1;
             newGain=0;
         }
 
+        // apply persistent correction from controller
+        newGain += (corrections[i]-lastPeakCorrections[i]);
 
-        if(isnan(newGain)){newGain = 0;}
-
-
-
-        // __android_log_print(ANDROID_LOG_INFO, "band", "%d %f", i,newGain);
-
+        // don't give gain
+        if(newGain>corrections[i]){
+            newGain=corrections[i];
+        }
 
         internals->filter->setBand(i, newGain);
 
 
     };
 
+    // masterGain corrections:
+    // raise masterGain to help freqs below the average
+    // raise masterGain to help freqs below the average
     if(numGainedBands>0) {
         totGain = totGain / numGainedBands ;
-        masterGain += totGain;
+        //masterGain += totGain;
         //masterGain += peakThreshold - ampdb(peakLevel);
 
     }else{
@@ -451,7 +510,8 @@ void ReactiveFilter::updateFilterAvgPeakNoGain() {
         if(masterGain<0){masterGain=0;}
     }
     if(masterGain>maxGain){masterGain = maxGain;}
-    //__android_log_print(ANDROID_LOG_INFO, "master", "master: %f %f %f", masterGain, totGain,maxGain);
+
+    lastPeakCorrections = corrections;
 
 
 }

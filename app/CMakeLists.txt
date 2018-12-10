@@ -14,6 +14,7 @@ add_library (
         src/main/cpp/SpectrumVisualizer.cpp
         src/main/cpp/ReactiveFilter.cpp
         src/main/cpp/FeedbackFilter.cpp
+        src/main/cpp/ReactiveFilterController.cpp
         ${PATH_TO_SUPERPOWERED}/AndroidIO/SuperpoweredAndroidAudioIO.cpp
 )
 

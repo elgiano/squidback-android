@@ -1,3 +1,0 @@
-/home/giano/AndroidStudioProjects/FeedbackGenerator/app/.externalNativeBuild/cmake/release/x86/CMakeFiles/edit_cache.dir
-/home/giano/AndroidStudioProjects/FeedbackGenerator/app/.externalNativeBuild/cmake/release/x86/CMakeFiles/rebuild_cache.dir
-/home/giano/AndroidStudioProjects/FeedbackGenerator/app/.externalNativeBuild/cmake/release/x86/CMakeFiles/FeedbackFilter.dir

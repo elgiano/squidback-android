@@ -16,14 +16,23 @@
 #include "scales.h"
 #include "SpectrumVisualizer.cpp"
 #include "ReactiveFilter.h"
+#include "ReactiveFilterController.h"
 
 static SuperpoweredAndroidAudioIO *audioIO;
 static float *floatBuffer;
+static bool micOpen=true;
 
-static SuperpoweredLimiter *limiter;
 static ReactiveFilter *reactiveFilter;
 
 
+/* UTILS */
+
+/*static float ampdb(float amp){
+    return 10*(float)log10(amp);
+}
+static float dbAmp(float amp){
+    return (float) pow(10,amp/10);
+}*/
 /*
 static void randomFilter(){
     for(unsigned int i = 0; i<analNumBands;i++){
@@ -34,19 +43,15 @@ static void randomFilter(){
  */
 
 
-static void initAudio(int samplerate, int buffersize){
+static void initAudio(int samplerate, int buffersize,int filterPrec){
     // allocate audio buffer
     floatBuffer = (float *)malloc(sizeof(float) * 2 * buffersize);
 
     initVisualizer(12,samplerate);
 
     reactiveFilter = new ReactiveFilter((unsigned) samplerate);
-    //reactiveFilter->setFilterBands(12);
+    reactiveFilter->setFilterBands(filterPrecisions[filterPrec]);
     reactiveFilter->enable(true);
-
-    // initialize limiter
-    limiter = new SuperpoweredLimiter((unsigned int)samplerate);
-    limiter->enable(true);
 
 }
 
@@ -193,15 +198,19 @@ static bool audioProcessing (
         int numberOfFrames,         // number of frames to process
         int __unused samplerate     // sampling rate
 ) {
-    SuperpoweredShortIntToFloat(audio, floatBuffer, (unsigned int)numberOfFrames);
 
+    if(micOpen){
+        SuperpoweredShortIntToFloat(audio, floatBuffer, (unsigned int)numberOfFrames);
+    }
     //visual
+    //SuperpoweredVolumeAdd(floatBuffer,floatBuffer,dbAmp(reactiveFilter->masterGain),dbAmp(reactiveFilter->masterGain), (unsigned int)numberOfFrames);
+
     processVisualizer(floatBuffer, (unsigned int) numberOfFrames);
 
     reactiveFilter->process(floatBuffer, floatBuffer, (unsigned int) numberOfFrames);
 
     // limit and out
-    limiter->process(floatBuffer, floatBuffer, (unsigned int)numberOfFrames);
+    //limiter->process(floatBuffer, floatBuffer, (unsigned int)numberOfFrames);
 
     //storeExpectations(numberOfFrames);
 
@@ -215,13 +224,14 @@ static bool audioProcessing (
 
 // StartAudio - Start audio engine.
 extern "C" JNIEXPORT void
-Java_com_superpowered_effect_MainActivity_StartAudio (
+Java_eu_gianlucaelia_squidback_MainActivity_StartAudio (
         JNIEnv * __unused env,
         jobject  __unused obj,
         jint samplerate,
-        jint buffersize
+        jint buffersize,
+        jint filterPrec
 ) {
-    initAudio(samplerate,buffersize);
+    initAudio(samplerate,buffersize,filterPrec);
 
     // init audio with audio callback function
     audioIO = new SuperpoweredAndroidAudioIO (
@@ -240,21 +250,20 @@ Java_com_superpowered_effect_MainActivity_StartAudio (
 
 // StopAudio - Stop audio engine and free resources.
 extern "C" JNIEXPORT void
-Java_com_superpowered_effect_MainActivity_StopAudio (
+Java_eu_gianlucaelia_squidback_MainActivity_StopAudio (
         JNIEnv * __unused env,
         jobject __unused obj
 ) {
     delete audioIO;
     destroyVisualizer();
     delete reactiveFilter;
-    delete limiter;
     free(floatBuffer);
 
 }
 
 // onBackground - Put audio processing to sleep.
 extern "C" JNIEXPORT void
-Java_com_superpowered_effect_MainActivity_onBackground (
+Java_eu_gianlucaelia_squidback_MainActivity_onBackground (
         JNIEnv * __unused env,
         jobject __unused obj
 ) {
@@ -264,7 +273,7 @@ Java_com_superpowered_effect_MainActivity_onBackground (
 
 // onForeground - Resume audio processing.
 extern "C" JNIEXPORT void
-Java_com_superpowered_effect_MainActivity_onForeground (
+Java_eu_gianlucaelia_squidback_MainActivity_onForeground (
         JNIEnv * __unused env,
         jobject __unused obj
 ) {
@@ -275,7 +284,7 @@ Java_com_superpowered_effect_MainActivity_onForeground (
 
 extern "C"
 JNIEXPORT jfloatArray JNICALL
-Java_com_superpowered_effect_MainActivity_getFilterFrequencies(JNIEnv *env, jobject instance) {
+Java_eu_gianlucaelia_squidback_MainActivity_getFilterFrequencies(JNIEnv *env, jobject instance) {
 
     int analNumBands = reactiveFilter->getNumBands();
     jfloatArray jArray = env->NewFloatArray(analNumBands);
@@ -293,7 +302,7 @@ Java_com_superpowered_effect_MainActivity_getFilterFrequencies(JNIEnv *env, jobj
 
 extern "C"
 JNIEXPORT jfloatArray JNICALL
-Java_com_superpowered_effect_MainActivity_getFilterDb(JNIEnv *env, jobject instance) {
+Java_eu_gianlucaelia_squidback_MainActivity_getFilterDb(JNIEnv *env, jobject instance) {
 
     int analNumBands = reactiveFilter->getNumBands();
     jfloatArray jArray = env->NewFloatArray(analNumBands);
@@ -301,12 +310,27 @@ Java_com_superpowered_effect_MainActivity_getFilterDb(JNIEnv *env, jobject insta
 
     if (jArray != NULL )
     {
-        /*float *filterDb = new float[analNumBands];
-        for(int i = 0; i<analNumBands;i++){
-            filterDb[i] = filter->decibels[i]+masterGain;
-        }*/
 
-        env->SetFloatArrayRegion(jArray, 0, analNumBands, reactiveFilter->getFilterDbs(true));
+        env->SetFloatArrayRegion(jArray, 0, analNumBands, reactiveFilter->getFilterDbs(false));
+    }
+    return jArray;
+
+}
+
+extern "C"
+JNIEXPORT jfloatArray JNICALL
+Java_eu_gianlucaelia_squidback_MainActivity_getCorrectionDb(JNIEnv *env, jobject instance) {
+
+    int analNumBands = reactiveFilter->getNumBands();
+    jfloat temp[analNumBands];
+    jfloatArray jArray = env->NewFloatArray(analNumBands);
+    std::vector<float> correction = reactiveFilter->controller->getPersistentPeakCorrectionNoGain();
+    std::copy(correction.begin(),correction.end(),temp);
+
+    if (jArray != NULL )
+    {
+
+        env->SetFloatArrayRegion(jArray, 0, analNumBands, temp);
     }
     return jArray;
 
@@ -315,7 +339,7 @@ Java_com_superpowered_effect_MainActivity_getFilterDb(JNIEnv *env, jobject insta
 /*
 extern "C"
 JNIEXPORT jfloatArray JNICALL
-Java_com_superpowered_effect_MainActivity_getCorrectionDb(JNIEnv *env, jobject instance) {
+Java_eu_gianlucaelia_squidback_MainActivity_getCorrectionDb(JNIEnv *env, jobject instance) {
     int analNumBands = reactiveFilter->getNumBands();
     jfloatArray jArray = env->NewFloatArray(analNumBands);
 
@@ -330,7 +354,7 @@ Java_com_superpowered_effect_MainActivity_getCorrectionDb(JNIEnv *env, jobject i
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_superpowered_effect_MainActivity_getPeakIndex(JNIEnv *env, jobject instance) {
+Java_eu_gianlucaelia_squidback_MainActivity_getPeakIndex(JNIEnv *env, jobject instance) {
 
     return (jint) reactiveFilter->currentPeakIndex;
 
@@ -338,10 +362,23 @@ Java_com_superpowered_effect_MainActivity_getPeakIndex(JNIEnv *env, jobject inst
 
 extern "C"
 JNIEXPORT jfloat JNICALL
-Java_com_superpowered_effect_MainActivity_setMaxGain(JNIEnv *env, jobject instance, jfloat perc) {
+Java_eu_gianlucaelia_squidback_MainActivity_getMasterGain(JNIEnv *env, jobject instance) {
 
     if(reactiveFilter){
-        reactiveFilter->maxGain = perc *  48 + 2;
+        return reactiveFilter->masterGain;
+    }else{
+        return 0;
+    }
+
+}
+
+extern "C"
+JNIEXPORT jfloat JNICALL
+Java_eu_gianlucaelia_squidback_MainActivity_setMaxGain(JNIEnv *env, jobject instance, jfloat perc) {
+
+    if(reactiveFilter){
+        reactiveFilter->maxGain = perc *  98 + 2;
+        reactiveFilter->adjustLopass(-1, true);
         return (jfloat) reactiveFilter->maxGain;
     }else{
         return 0;
@@ -350,7 +387,7 @@ Java_com_superpowered_effect_MainActivity_setMaxGain(JNIEnv *env, jobject instan
 }
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_superpowered_effect_MainActivity_setPlasticity(JNIEnv *env, jobject instance,
+Java_eu_gianlucaelia_squidback_MainActivity_setPlasticity(JNIEnv *env, jobject instance,
                                                         jfloat perc) {
 
     if(reactiveFilter) reactiveFilter->plasticity = (float) pow(10000000,perc)*0.01f;
@@ -360,7 +397,7 @@ Java_com_superpowered_effect_MainActivity_setPlasticity(JNIEnv *env, jobject ins
 }
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_superpowered_effect_MainActivity_setInertia(JNIEnv *env, jobject instance, jfloat perc) {
+Java_eu_gianlucaelia_squidback_MainActivity_setInertia(JNIEnv *env, jobject instance, jfloat perc) {
 
     if(reactiveFilter) reactiveFilter->inertia = (float) pow(1/0.001,1-perc)*0.001f -0.001f;
     // linexp: pow(outMax/outMin, (this-inMin)/(inMax-inMin)) * outMin
@@ -370,34 +407,26 @@ Java_com_superpowered_effect_MainActivity_setInertia(JNIEnv *env, jobject instan
 }
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_superpowered_effect_MainActivity_setPeakThr(JNIEnv *env, jobject instance, jfloat perc) {
+Java_eu_gianlucaelia_squidback_MainActivity_setPeakThr(JNIEnv *env, jobject instance, jfloat perc) {
 
-    if(reactiveFilter) reactiveFilter->peakThreshold = (1-perc)*(-30);
+    if(reactiveFilter) reactiveFilter->peakThreshold = (1-perc)*(-40)+10;
 
 
 }extern "C"
 JNIEXPORT void JNICALL
-Java_com_superpowered_effect_MainActivity_setFilterBw(JNIEnv *env, jobject instance, jint prec) {
+Java_eu_gianlucaelia_squidback_MainActivity_setFilterBw(JNIEnv *env, jobject instance, jint prec) {
 
     // int prec must go from 0 to 11
     if(prec >= 0 && prec< 12 ){
-        //clearFilter();
         if(reactiveFilter) reactiveFilter->setFilterBands(filterPrecisions[prec]);
     }
 
 }extern "C"
 JNIEXPORT void JNICALL
-Java_com_superpowered_effect_MainActivity_setLopass(JNIEnv *env, jobject instance, jfloat perc) {
+Java_eu_gianlucaelia_squidback_MainActivity_setLopass(JNIEnv *env, jobject instance, jfloat perc) {
 
-    perc = 1-perc;
-    /*float oldLopass = reactiveFilter->lopass;*/
-    reactiveFilter->adjustLopass( (float) pow(22000/20,perc)*20, true);
-
-    /*for(int i = 0; i<analNumBands;i++){
-        if(analBands[i]>=oldLopass && analBands[i]<=lopass ){
-            filter->setBand(i,0);
-        }
-    }*/
+    //perc = 1-perc;
+    reactiveFilter->adjustLopass( (float) pow(22000/10000,perc)*10000, true);
 
     // linexp: pow(outMax/outMin, (this-inMin)/(inMax-inMin)) * outMin
 
@@ -408,7 +437,7 @@ Java_com_superpowered_effect_MainActivity_setLopass(JNIEnv *env, jobject instanc
 
 extern "C"
 JNIEXPORT jfloatArray JNICALL
-Java_com_superpowered_effect_MainActivity_getSpectrum(JNIEnv *env, jobject instance) {
+Java_eu_gianlucaelia_squidback_MainActivity_getSpectrum(JNIEnv *env, jobject instance) {
 
     //jfloatArray jArray = env->NewFloatArray(analNumBands);
 
@@ -431,7 +460,7 @@ Java_com_superpowered_effect_MainActivity_getSpectrum(JNIEnv *env, jobject insta
 }
 extern "C"
 JNIEXPORT jfloatArray JNICALL
-Java_com_superpowered_effect_MainActivity_getSpectrumFrequencies(JNIEnv *env, jobject instance) {
+Java_eu_gianlucaelia_squidback_MainActivity_getSpectrumFrequencies(JNIEnv *env, jobject instance) {
 
     //jfloatArray jArray = env->NewFloatArray(analNumBands);
     jfloatArray jArray = env->NewFloatArray(numVisualBands);
@@ -448,17 +477,31 @@ Java_com_superpowered_effect_MainActivity_getSpectrumFrequencies(JNIEnv *env, jo
 }
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_superpowered_effect_MainActivity_setMemsetGlitch(JNIEnv *env, jobject instance,
+Java_eu_gianlucaelia_squidback_MainActivity_setMemsetGlitch(JNIEnv *env, jobject instance,
                                                             jboolean sw) {
     if(reactiveFilter) reactiveFilter->memsetGlitch = sw;
+
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_eu_gianlucaelia_squidback_MainActivity_setMicOpen(JNIEnv *env, jobject instance,
+                                                            jboolean sw) {
+    if(reactiveFilter) micOpen = sw;
 
 }
 
 /*
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_superpowered_effect_MainActivity_randomFilter(JNIEnv *env, jobject instance) {
+Java_eu_gianlucaelia_squidback_MainActivity_randomFilter(JNIEnv *env, jobject instance) {
 
     randomFilter();
 
-}*/
+}*/extern "C"
+JNIEXPORT void JNICALL
+Java_eu_gianlucaelia_squidback_MainActivity_updateFilterController(JNIEnv *env, jobject instance) {
+
+    if(reactiveFilter &&  reactiveFilter->controller) reactiveFilter->controller->printAll();
+
+}
