@@ -28,7 +28,7 @@ class ReactiveFilterController{
 
 public:
 
-    std::map<std::string, std::vector<float> > trackings;
+    std::map<std::string, std::vector<float>> trackings;
     std::vector<std::string> trackingKeys;
     std::map<float, float> peakRegister;
 
@@ -47,6 +47,12 @@ public:
 
     std::vector<float> getPersistentPeakCorrection();
     std::vector<float> getPersistentPeakCorrectionNoGain();
+    float *getPersistentPeakCorrectionNoGainPointer();
+
+    int targetNumBands=0;
+    float *targetCorrection;
+
+    float mapToCurve(float val,float min,float max,float curve);
 
 
 };

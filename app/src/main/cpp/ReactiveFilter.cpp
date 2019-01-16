@@ -14,6 +14,7 @@
 #include "ReactiveFilterController.h"
 
 
+
 typedef struct reactiveFilterInternals {
 
     unsigned int analNumBands = 0;
@@ -31,7 +32,7 @@ typedef struct reactiveFilterInternals {
 /* UTILS */
 
 float ampdb(float amp){
-    return 20*(float)log10(amp);
+    return amp>0 ? 20*(float)log10(amp) : -80;
 }
 float dbAmp(float amp){
     return (float) pow(10,amp/20);
@@ -73,6 +74,7 @@ void freeInternals(reactiveFilterInternals *toFree){
     delete toFree->gainSpeeds;
     delete toFree->lastCycleGain;
     delete toFree;
+
 };
 
 /* CONSTRUCTOR */
@@ -89,11 +91,13 @@ ReactiveFilter::ReactiveFilter(unsigned int samplerate) {
 
     //init parameters
     lopass = 15000;
+    hipass = 20;
     maxGain = 30;
     plasticity = 1000;
     peakThreshold = 0.1;
     inertia = 0.001;
 
+    // initialize limiter
     limiter = new SuperpoweredLimiter((unsigned int)samplerate);
     limiter->enable(true);
 
@@ -108,6 +112,7 @@ ReactiveFilter::~ReactiveFilter() {
     if(internals!=NULL) freeInternals(internals);
     if(nextInternals!=NULL) freeInternals(nextInternals);
     delete limiter;
+
 }
 
 void ReactiveFilter::reset(){
@@ -118,6 +123,7 @@ void ReactiveFilter::setSamplerate(unsigned int samplerate) {
     // This method can be called from any thread. Setting the sample rate of all filters must be synchronous, in the audio processing thread.
     internals->newSamplerate = samplerate;
     limiter->setSamplerate(samplerate);
+
 }
 
 /* ACCESSORS */
@@ -130,8 +136,6 @@ int ReactiveFilter::getNumBands() {
 float *ReactiveFilter::getBands() {
     if(internals->analBands) return internals->analBands;
     return (new float[1]);
-
-
 }
 
 float *ReactiveFilter::getFilterDbs(bool applyMasterGain) {
@@ -148,16 +152,52 @@ float *ReactiveFilter::getFilterDbs(bool applyMasterGain) {
     }
 }
 
+float ReactiveFilter::getTotalCorrection(bool removePersistent) {
+    if(internals->filter){
+
+        float filterDb = 0;
+        for(int i = 0; i<internals->analNumBands;i++){
+            filterDb += internals->filter->decibels[i];
+        }
+        if(removePersistent){
+            std::vector<float> corrections = controller->getPersistentPeakCorrectionNoGain();
+            filterDb += std::accumulate(corrections.begin(), corrections.end(), 0.0f);
+        }
+
+        return filterDb;
+    }else{
+        return 0;
+    }
+}
+
 void ReactiveFilter::adjustLopass(float newLopass, bool clear){
     float oldLopass = lopass;
 
-    if(newLopass>0) lopass = newLopass;
-
+    if(newLopass>0){
+        lopass = newLopass;
+    }
 
     if(clear && internals->filter) {
         // clear bands between old and new lopass
         for (unsigned int i = 0; i < internals->analNumBands; i++) {
-            if (internals->analBands[i] >= oldLopass && internals->analBands[i] <= newLopass) {
+            if (internals->analBands[i] >= oldLopass && internals->analBands[i] <= lopass) {
+                internals->filter->setBand(i, 0);
+            }
+        }
+    }
+}
+
+void ReactiveFilter::adjustHipass(float newHipass, bool clear){
+    float oldHipass = hipass;
+
+    if(newHipass>0){
+        hipass = newHipass;
+    }
+
+    if(clear && internals->filter) {
+        // clear bands between old and new hipass
+        for (unsigned int i = 0; i < internals->analNumBands; i++) {
+            if (internals->analBands[i] <= oldHipass && internals->analBands[i] >= hipass) {
                 internals->filter->setBand(i, 0);
             }
         }
@@ -167,9 +207,6 @@ void ReactiveFilter::adjustLopass(float newLopass, bool clear){
 
 /* BANDS SETTINGS */
 
-// Now setFilterBands creates a new internal struct
-// nextInternals will be swapped with internals synchronously in the audio thread
-
 void ReactiveFilter::incrementBand(int i, float val){
     internals->filter->setBand(i, internals->filter->decibels[i] + val);
 }
@@ -178,6 +215,10 @@ float ReactiveFilter::getBand(int i){
     if(internals->analBands && i< internals->analNumBands) return internals->analBands[i];
     return 0;
 }
+
+
+// Now setFilterBands creates a new internal struct
+// nextInternals will be swapped with internals synchronously in the audio thread
 
 void ReactiveFilter::setFilterBands(int div){
 
@@ -215,6 +256,8 @@ void ReactiveFilter::setFilterBands(int div){
     nextInternals = newInternals;
     //pthread_mutex_unlock( &filterMutex );
 
+
+
 }
 
 void ReactiveFilter::setFilterET(int div,reactiveFilterInternals *newInternals){
@@ -243,21 +286,25 @@ void ReactiveFilter::setFilterPartch(int div,reactiveFilterInternals *newInterna
             newInternals->analNumBands = 400;
             newInternals->analWidths = new float[newInternals->analNumBands];
             scale = partchScale;
+            div = 43;
             break;
         case 24:
             newInternals->analNumBands = 288;
             newInternals->analWidths = new float[newInternals->analNumBands];
             scale = partchScale7;
+            div = 31;
             break;
         case 12:
             newInternals->analNumBands = 176;
             newInternals->analWidths = new float[newInternals->analNumBands];
             scale = partchScale5;
+            div = 19;
             break;
         case 6:
             newInternals->analNumBands = 64;
             newInternals->analWidths = new float[newInternals->analNumBands];
             scale = partchScale3;
+            div = 7;
             break;
         default: return setFilterET(1,newInternals);
     }
@@ -275,6 +322,7 @@ void ReactiveFilter::setFilterPartch(int div,reactiveFilterInternals *newInterna
                 logf(newInternals->analBands[i + 1] / newInternals->analBands[i]) :
                 logf(20000.0f / newInternals->analBands[i]);
         newInternals->analWidths[i] *= log2fdiv;
+        newInternals->analWidths[i] = 1.0f/div;
 
     }
 }
@@ -348,8 +396,11 @@ void ReactiveFilter::updateInternals() {
         }
         freeInternals(tmp);
         lastPeakCorrections = controller->getPersistentPeakCorrectionNoGain();
+
     }
 }
+
+// AUDIO PROCESS
 
 bool ReactiveFilter::process(float *input, float *output, unsigned int numberOfSamples) {
 
@@ -385,24 +436,23 @@ bool ReactiveFilter::process(float *input, float *output, unsigned int numberOfS
 
     limiterCorrection = limiter->getGainReductionDb();
 
-
     controller->trackValue("outVolDb", ampdb(SuperpoweredPeak(output, numberOfSamples)));
     controller->trackValue("averageDb", average);
     controller->trackValue("peakDb", this->peak);
     controller->trackValue("peakness", peakness);
     controller->trackValue("limiterCorrection", limiterCorrection);
+    controller->trackValue("filterVariation", filterVariation);
+
     if(internals->analMagnitudes[currentPeakIndex] > peakThreshold)
         controller->trackValue("peakI", currentPeakIndex);
 
-    /*std::cout << limiterCorrection << std::endl;
-    auto now = std::chrono::system_clock::now();
+    //std::cout << limiterCorrection << std::endl;
+    /*auto now = std::chrono::system_clock::now();
     std::cout << (std::chrono::duration_cast<std::chrono::milliseconds>(now-lastUpdate)).count() << std::endl;
     lastUpdate = now;*/
 
     controller->adjustControls();
-
-
-
+    //controller->printAll();
     return true;
 
 }
@@ -430,9 +480,11 @@ void ReactiveFilter::updateFilterAvgPeakNoGain() {
     float totGain = 0;
     float numGainedBands = 0;
 
+    float variation = 0;
+
     // detect peak
     float *peakDb = std::max_element(internals->analMagnitudes, internals->analMagnitudes+internals->analNumBands);
-
+    float *antipeakDb = std::min_element(internals->analMagnitudes, internals->analMagnitudes+internals->analNumBands);
     currentPeakIndex = (unsigned int) std::distance(
             internals->analMagnitudes,
             peakDb
@@ -442,7 +494,7 @@ void ReactiveFilter::updateFilterAvgPeakNoGain() {
     for(unsigned int i=0; i<internals->analNumBands; i++){
         averageDb += internals->analMagnitudes[i];
     };
-    averageDb = ampdb(averageDb/internals->analNumBands);
+    averageDb = ampdb(*peakDb)/2+ampdb(*antipeakDb)/2 ;//ampdb(averageDb/internals->analNumBands);
 
     // calc peakness
     peak = ampdb(*peakDb);
@@ -453,44 +505,56 @@ void ReactiveFilter::updateFilterAvgPeakNoGain() {
 
     for(unsigned int i=0; i<internals->analNumBands; i++){
 
-        float magDb = ampdb(internals->analMagnitudes[i]);
-
-        float peakDelta = peakThreshold - magDb;
-        float avgDelta = averageDb - magDb;
-
-
-        //newGain = filter->decibels[i] + (float) (sign(peakDelta+avgDelta)*sqrt(pow(peakDelta,2)+pow(avgDelta,2))/plasticity) ;
-        newGain =  (peakDelta+avgDelta) ;
-
-        float inertiaGain = calcAcceleration(i,newGain);
-        newGain = inertiaGain;
-
-        newGain = internals->filter->decibels[i] + (newGain/plasticity);
-
-        // NaN filter
-        if(isnan(newGain)){newGain = 0;}
-
-        // lowest limit
-        if(newGain<-(maxGain+80)){newGain = -(maxGain+80);}
-        // lowpass
-        if(internals->analBands[i]>=lopass){
+        // lowpass-hipass
+        if(internals->analBands[i]>=lopass || internals->analBands[i]<=hipass ){
             newGain = -maxGain-80;
+        }else{
+
+            float magDb = ampdb(internals->analMagnitudes[i]);
+
+            float peakDelta = peakThreshold/*std::max(averageDb,peakThreshold)*/ - magDb;
+            float avgDelta = std::min(averageDb,peakThreshold) - magDb;
+
+
+            //newGain = filter->decibels[i] + (float) (sign(peakDelta+avgDelta)*sqrt(pow(peakDelta,2)+pow(avgDelta,2))/plasticity) ;
+            newGain =  peakDelta;//+avgDelta;// * (peakDelta*avgDelta>0?1:-1);//(peakDelta+avgDelta) ;
+            //if(peakDelta*avgDelta>0 && newGain > 0){ newGain *= -1;}
+            //if(magDb<=avgDelta){newGain *= -1;}
+
+            //float inertiaGain = calcAcceleration(i,newGain);
+            //newGain = inertiaGain;
+
+            //newGain = internals->filter->decibels[i] + (newGain/plasticity);
+            newGain = (newGain-internals->filter->decibels[i]);
+
+            newGain /= newGain>=0?inertia:plasticity;
+
+            newGain += internals->filter->decibels[i];
+
+
+            // lowest limit
+            if(newGain<-(maxGain+80)){newGain = -(maxGain+80);}
+
+
+            // don't give gain
+            if(newGain>0){
+                totGain += newGain;
+                numGainedBands += 1;
+                newGain=0;
+            }
+
+            // apply persistent correction from controller
+            newGain += (corrections[i]-lastPeakCorrections[i]);
+
+            // NaN filter
+            if(isnan(newGain)){newGain = 0;}
         }
-
-        // don't give gain
-        if(newGain>0){
-            totGain += newGain;
-            numGainedBands += 1;
-            newGain=0;
-        }
-
-        // apply persistent correction from controller
-        newGain += (corrections[i]-lastPeakCorrections[i]);
-
         // don't give gain
         if(newGain>corrections[i]){
             newGain=corrections[i];
         }
+
+        variation += abs(newGain - internals->filter->decibels[i]);
 
         internals->filter->setBand(i, newGain);
 
@@ -498,7 +562,6 @@ void ReactiveFilter::updateFilterAvgPeakNoGain() {
     };
 
     // masterGain corrections:
-    // raise masterGain to help freqs below the average
     // raise masterGain to help freqs below the average
     if(numGainedBands>0) {
         totGain = totGain / numGainedBands ;
@@ -512,6 +575,11 @@ void ReactiveFilter::updateFilterAvgPeakNoGain() {
     if(masterGain>maxGain){masterGain = maxGain;}
 
     lastPeakCorrections = corrections;
+    filterVariation = variation;
 
 
 }
+
+float *ReactiveFilter::getAnalMagnitudes(){
+    return internals->analMagnitudes;
+};

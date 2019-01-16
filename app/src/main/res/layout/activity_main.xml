@@ -52,7 +52,8 @@
         android:layout_gravity="start"
         android:background="@color/colorTransparent"
         android:fitsSystemWindows="true"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:visibility="invisible">
 
         <TextView
             android:id="@+id/textView"
@@ -62,12 +63,14 @@
             android:background="@color/colorMenu"
             android:padding="@dimen/padding_menuItem"
             android:text="Settings"
-            android:textAppearance="@style/TextAppearance.AppCompat.Title" />
+            android:textAppearance="@style/TextAppearance.AppCompat.Title"
+            android:visibility="gone" />
 
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@color/colorTransparent">
+            android:background="@color/colorTransparent"
+            android:visibility="gone">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -131,13 +134,15 @@
                     android:layout_marginTop="@dimen/margin_menuGroup"
                     android:background="@color/colorMenu"
                     android:padding="@dimen/padding_menuItem"
-                    android:text="Hi Cut" />
+                    android:text="Hi Cut"
+                    android:visibility="gone" />
 
                 <SeekBar
                     android:id="@+id/lopassBar"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_menuItem" />
+                    android:padding="@dimen/padding_menuItem"
+                    android:visibility="gone" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -170,7 +175,7 @@
                     android:id="@+id/bwBar"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:max="11"
+                    android:max="7"
                     android:padding="@dimen/padding_menuItem" />
 
                 <TextView
@@ -180,18 +185,21 @@
                     android:layout_marginTop="@dimen/margin_menuGroup"
                     android:background="@color/colorMenu"
                     android:padding="@dimen/padding_menuItem"
-                    android:text="Plasticity" />
+                    android:text="Plasticity"
+                    android:visibility="gone" />
 
                 <SeekBar
                     android:id="@+id/plasticityBar"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_menuItem" />
+                    android:padding="@dimen/padding_menuItem"
+                    android:visibility="gone" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:visibility="gone">
 
                     <TextView
                         android:id="@+id/textView6"

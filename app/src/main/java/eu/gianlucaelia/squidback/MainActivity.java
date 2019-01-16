@@ -214,6 +214,10 @@ public class MainActivity extends AppCompatActivity {
         spectrumSeries.resetData(new DataPoint[]{});
         correctionSeries.resetData(new DataPoint[]{});
         gainSeries.resetData(new DataPoint[]{});
+
+        ((Button) findViewById(R.id.startStop)).setEnabled(true);
+        ((Button) findViewById(R.id.startStop)).setVisibility(View.VISIBLE);
+
     }
 
     private void initControls() {
@@ -246,9 +250,9 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress,boolean fromUser) {
-                filterPrecision = progress;
-                setFilterBw(progress);
-                updatePrecisionText(progress);
+                filterPrecision = progress + 4;
+                setFilterBw(filterPrecision);
+                updatePrecisionText(filterPrecision);
                 rescaleGraphs();
             }
         });
@@ -334,7 +338,7 @@ public class MainActivity extends AppCompatActivity {
         setPlasticity(((SeekBar) findViewById(R.id.plasticityBar)).getProgress()/100.0f);
         setInertia(((SeekBar) findViewById(R.id.inertiaBar)).getProgress()/100.0f);
         setPeakThr(((SeekBar) findViewById(R.id.thrBar)).getProgress()/100.0f);
-        filterPrecision = ((SeekBar) findViewById(R.id.bwBar)).getProgress();
+        filterPrecision = ((SeekBar) findViewById(R.id.bwBar)).getProgress() + 4;
         setFilterBw(filterPrecision);
         updatePrecisionText(filterPrecision);
         setMemsetGlitch(((Switch) findViewById(R.id.memsetSwitch)).isChecked());
@@ -374,20 +378,23 @@ public class MainActivity extends AppCompatActivity {
 
     // Handle Start/Stop button toggle.
     public void ToggleStartStop(View button) {
+        Button b = findViewById(R.id.startStop);
         if (playing) {
             stopControls();
-            stopGraphPoll();
+            //stopGraphPoll();
             StopAudio();
             playing = false;
+            b.setEnabled(false);
+            b.setVisibility(View.INVISIBLE);
         } else {
-            filterPrecision = ((SeekBar) findViewById(R.id.bwBar)).getProgress();
+            filterPrecision = ((SeekBar) findViewById(R.id.bwBar)).getProgress() +4;
             StartAudio(samplerate, buffersize, filterPrecision );
             playing = true;
             initControls();
             setAllControls();
             initGraphPoll();
+
         }
-        Button b = findViewById(R.id.startStop);
         b.setText(playing ? "Stop" : "Start");
     }
 
@@ -404,16 +411,19 @@ public class MainActivity extends AppCompatActivity {
                 mHandler.postDelayed(this, 100);
             }
         };
-        mTimer2 = new Runnable() {
+        /*mTimer2 = new Runnable() {
             @Override
             public void run() {
                 //Log.i("updating","ctrl");
                 updateFilterController();
                 mHandler.postDelayed(this, 1000);
             }
-        };
+        };*/
         mHandler.postDelayed(mTimer1, 100);
-        mHandler.postDelayed(mTimer2, 1000);
+        //mHandler.postDelayed(mTimer2, 1000);
+
+        filterGraph.setAlpha(1);
+        spectrumGraph.setAlpha(1);
     }
 
     public void stopGraphPoll(){
@@ -426,7 +436,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateSpectrumData() {
-        if(playing) {
+        if(!playing) {
+
+            if(!isPlaying()){stopGraphPoll();return;}
+
+            spectrumGraph.setAlpha(getFade());
+        }
             float spectrum[] = getSpectrum();
             //int peakIndex = getPeakIndex();
             float testPeak = 0;
@@ -479,7 +494,7 @@ public class MainActivity extends AppCompatActivity {
 
             //peakSeries.setColor(invertedBgColor);
             //Log.i("amp",""+spectrum[peakIndex]);
-        }
+
 
     }
 
@@ -529,7 +544,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateFilterData() {
-        if(playing) {
+        if(!playing) {
+
+            if(!isPlaying()){stopGraphPoll();return;}
+
+            filterGraph.setAlpha(getFade());
+        }
             float spectrum[] = getFilterDb();
             float corr[] = getCorrectionDb();
             int n_freqs = spectrum.length;
@@ -557,7 +577,7 @@ public class MainActivity extends AppCompatActivity {
             filterSeries.resetData(values);
             gainSeries.resetData(gainVal);
             correctionSeries.resetData(corrVal);
-        }
+
 
 
     }
@@ -605,6 +625,9 @@ public class MainActivity extends AppCompatActivity {
     private native void setFilterBw(int perc);
     private native void setMemsetGlitch(boolean sw);
     private native void setMicOpen(boolean sw);
+    private native boolean isPlaying();
+    private native float getFade();
+
     //private native void randomFilter();
 
 

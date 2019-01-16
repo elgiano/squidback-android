@@ -21,6 +21,10 @@
 static SuperpoweredAndroidAudioIO *audioIO;
 static float *floatBuffer;
 static bool micOpen=true;
+static bool fadeIn=true;
+static bool fadeOut=false;
+static float fade=0;
+static bool playing=false;
 
 static ReactiveFilter *reactiveFilter;
 
@@ -197,6 +201,7 @@ static bool audioProcessing (
         short int *audio,           // buffer of interleaved samples
         int numberOfFrames,         // number of frames to process
         int __unused samplerate     // sampling rate
+
 ) {
 
     if(micOpen){
@@ -213,6 +218,33 @@ static bool audioProcessing (
     //limiter->process(floatBuffer, floatBuffer, (unsigned int)numberOfFrames);
 
     //storeExpectations(numberOfFrames);
+    // fade
+    if(fadeIn || fadeOut){
+        float oldFade = fade;
+        if(fadeIn){
+             fade += 0.005;
+            if( fade>=1){
+                 fade = 1;
+                 fadeIn = false;
+            }
+        }else if( fadeOut){
+             fade -= 0.001;
+            if( fade<=0){
+                 fade = 0;
+                // fadeOut = false;
+                audioIO->stop();
+                destroyVisualizer();
+                delete  reactiveFilter;
+                free(floatBuffer);
+                playing = false;
+                return false;
+            }
+
+        }
+
+        SuperpoweredVolume(floatBuffer,floatBuffer,oldFade, fade,(unsigned int)numberOfFrames);
+
+    }
 
     SuperpoweredFloatToShortInt(floatBuffer, audio, (unsigned int)numberOfFrames);
 
@@ -233,6 +265,9 @@ Java_eu_gianlucaelia_squidback_MainActivity_StartAudio (
 ) {
     initAudio(samplerate,buffersize,filterPrec);
 
+    fadeIn = true;
+    fadeOut = false;
+
     // init audio with audio callback function
     audioIO = new SuperpoweredAndroidAudioIO (
             samplerate,                     // sampling rate
@@ -246,6 +281,8 @@ Java_eu_gianlucaelia_squidback_MainActivity_StartAudio (
             buffersize * 2                  // latencySamples
     );
 
+    playing = true;
+
 }
 
 // StopAudio - Stop audio engine and free resources.
@@ -254,10 +291,12 @@ Java_eu_gianlucaelia_squidback_MainActivity_StopAudio (
         JNIEnv * __unused env,
         jobject __unused obj
 ) {
-    delete audioIO;
+    /*delete audioIO;
     destroyVisualizer();
     delete reactiveFilter;
-    free(floatBuffer);
+    free(floatBuffer);*/
+    fadeOut = true;
+    fadeIn = false;
 
 }
 
@@ -503,5 +542,18 @@ JNIEXPORT void JNICALL
 Java_eu_gianlucaelia_squidback_MainActivity_updateFilterController(JNIEnv *env, jobject instance) {
 
     if(reactiveFilter &&  reactiveFilter->controller) reactiveFilter->controller->printAll();
+
+}extern "C"
+JNIEXPORT jboolean JNICALL
+Java_eu_gianlucaelia_squidback_MainActivity_isPlaying(JNIEnv *env, jobject instance) {
+
+    return playing;
+
+
+}extern "C"
+JNIEXPORT jfloat JNICALL
+Java_eu_gianlucaelia_squidback_MainActivity_getFade(JNIEnv *env, jobject instance) {
+
+    return fade;
 
 }

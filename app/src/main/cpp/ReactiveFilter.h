@@ -13,6 +13,7 @@
 #include <SuperpoweredLimiter.h>
 #include "scales.h"
 
+
 class ReactiveFilterController;
 
 struct reactiveFilterInternals;
@@ -23,17 +24,21 @@ class ReactiveFilter : public SuperpoweredFX {
 public:
     int currentPeakIndex;
     float peakness = 0,average,peak,limiterCorrection;
+    //std::chrono::system_clock::time_point lastUpdate;
     ReactiveFilterController *controller;
 
 
     // PARAMETERS
-    bool memsetGlitch;
+    bool memsetGlitch=false;
     float maxGain;
     float inertia;
     float plasticity;
     float lopass;
+    float hipass;
     float masterGain;
     float peakThreshold;
+
+    float filterVariation;
 
 
     /**
@@ -45,6 +50,8 @@ public:
 
     void incrementBand(int i, float val);
     float getBand(int i);
+
+    float getTotalCorrection(bool removePersistent);
 
 /**
  @brief Turns the effect on/off.
@@ -85,15 +92,20 @@ public:
     float *getBands();
     float *getFilterDbs(bool applyMasterGain);
     void adjustLopass(float newLopass, bool clear);
+    void adjustHipass(float newLopass, bool clear);
+
+    float *getAnalMagnitudes();
 
 
-        private:
+
+private:
     reactiveFilterInternals *internals;
     reactiveFilterInternals *nextInternals;
 
     SuperpoweredLimiter *limiter;
 
     std::vector<float> lastPeakCorrections;
+
 
 
     /*static SuperpoweredNBandEQ *correctionFilter;*/
