@@ -161,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
         filterSeries.setDrawBackground(true);
 
         correctionSeries.setThickness(0);
-        correctionSeries.setBackgroundColor(Color.rgb(20,20,20));
+        correctionSeries.setBackgroundColor(Color.rgb(38,38,38));
         correctionSeries.setColor(Color.rgb(0,0,0));
         gainSeries.setThickness(1);
         gainSeries.setColor(gainSeries.getBackgroundColor());
