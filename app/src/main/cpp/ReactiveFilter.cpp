@@ -528,7 +528,7 @@ void ReactiveFilter::updateFilterAvgPeakNoGain() {
             newGain = (newGain-internals->filter->decibels[i]);
 
             //newGain /= /*(newGain>=0?inertia:plasticity)*/(5000/abs(corrections[i]+0.01))/**(newGain>=0?inertia/plasticity:plasticity/inertia)*/;
-            newGain /= (/*newGain>=0?(pow(2,abs(corrections[i]+0.01))):*/(100000/pow(1.1,abs(corrections[i]+0.01))));
+            newGain /= (/*newGain>=0?(pow(2,abs(corrections[i]+0.01))):*/(100000/pow(1.3,abs(corrections[i]+0.01))));
 
             // 1.2
 

@@ -429,7 +429,7 @@ public class MainActivity extends AppCompatActivity {
     public void stopGraphPoll(){
 
         mHandler.removeCallbacks(mTimer1);
-        mHandler.removeCallbacks(mTimer2);
+        //mHandler.removeCallbacks(mTimer2);
 
         resetGraphs();
 

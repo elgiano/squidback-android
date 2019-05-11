@@ -82,7 +82,7 @@ void ReactiveFilterController::adjustControls(){
 
 
     // raise gain to push out to -10, -3
-    float desiredDb = 0;
+    float desiredDb = -6;
     float gainMaximize = ((outVolDb-desiredDb) + (outVolDbAvg-desiredDb)/2) * -0.001;
     // adjust gain to avoid saturation
     //float gainLimiter = (limiterCorrection * 4 - 1) ;
@@ -100,16 +100,15 @@ void ReactiveFilterController::adjustControls(){
     target->masterGain += gainMaximize +inGain; // + gainLimiter;// + (peakExcess*0.001);
     //std::cout << "g: " << (gainMaximize +inGain + gainLimiter) << ": "<< gainMaximize  << " " << inGain << " " << inVolDb << " " << outVolDb << " " << std::endl;
 
-
     //__android_log_print(ANDROID_LOG_INFO,"peak","%f %f",peakExcess,dPeak);
 
 
     target->peakThreshold = (avgT*2+avg)/3;//avgT + (-avg/2);
-    target->peakThreshold =  std::max(target->peakThreshold, -3.0f);//avgT * 0.25;// + (peakExcess/dPeak*0.01);
+    target->peakThreshold =  std::max(target->peakThreshold, -6.0f);//avgT * 0.25;// + (peakExcess/dPeak*0.01);
     //std::cout << "p: "<<peak << ": "<< (peak-avgT/2) << " a: " << avgT << std::endl;
 
     //std::cout << peakThr << std::endl;
-    //__android_log_print(ANDROID_LOG_INFO,"peakThr","%f %f",peakness,target->peakThreshold);
+    //__android_log_print(ANDROID_LOG_INFO,"peakThr","%f %f",target->peakThreshold, target->masterGain);
 
 
     float totalCorrection = -target->getTotalCorrection(true) / target->getNumBands();
@@ -152,7 +151,7 @@ void ReactiveFilterController::adjustControls(){
                                                  [](const std::pair<float, int>& p1, const std::pair<float, int>& p2) {
                                                      return p1.second < p2.second; });
 
-    peakRegister[target->getBand(most_persistent_peak->first)] += 0.003; // 2
+    peakRegister[target->getBand(most_persistent_peak->first)] += 0.001; // 2
 
 
     /*for(auto& p: peaks){
